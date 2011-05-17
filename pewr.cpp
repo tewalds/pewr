@@ -5,18 +5,20 @@
 #include <complex>
 #include <string>
 #include <vector>
-#include <iostream>
+#include <fstream>
 #include <stdint.h>
 
+#include <fftw3.h>
+
 #include "Array.h"
-#include "fftw++.h"
 #include "time.h"
 
-// Compile with g++ pewr.cpp fftw++.cc -lfftw3
+// Compile with g++ -lfftw3 -lm -fopenmp pewr.cpp -o pewr
 
 using namespace std;
 using namespace Array;
-using namespace fftwpp;
+
+typedef std::complex<double> Complex;
 
 typedef array2<Complex> ArrayComplex;
 typedef array2<double>  ArrayDouble;
@@ -31,8 +33,8 @@ struct Plane {
 	ArrayComplex backprop;  // back propagation value to refocus the exit wave
 	ArrayComplex ew;        // exit wave plane in the real domain
 	ArrayComplex ewfft;     // exit wave plane in the frequency domain
-	fft2d        fftfwd;    // fast fourier transform in the forward direction space -> freq
-	fft2d        fftbwd;    // fast fourier transform in the reverse direction freq -> space
+	fftw_plan    fftfwd;    // fast fourier transform in the forward direction space -> freq
+	fftw_plan    fftbwd;    // fast fourier transform in the reverse direction freq -> space
 	
 	Plane(int _size, int _padding) : 
 		size(_size), padding(_padding),
@@ -41,10 +43,10 @@ struct Plane {
 		prop(     padding, padding, sizeof(Complex)),
 		backprop( padding, padding, sizeof(Complex)),
 		ew(       padding, padding, sizeof(Complex)),
-		ewfft(    padding, padding, sizeof(Complex)),
-		fftfwd(-1, ew, ewfft), 
-		fftbwd( 1, ewfft, ew) 
+		ewfft(    padding, padding, sizeof(Complex))
 		{
+		fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
+		fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
 	}
 
 	template <class T> void import(const string & name){
@@ -122,6 +124,7 @@ public:
 
 		Time start;
 		cout << "Loading config file ... ";
+		cout.flush();
 
 		while(ifs.good()){
 			string cmd;
@@ -188,6 +191,7 @@ public:
 		ifs.close();
 
 		cout << "normalizing data ... ";
+		cout.flush();
 
 		//normalize
 		double mean = 0;
@@ -213,27 +217,32 @@ public:
 		}
 
 		cout << "initializing approx ... ";
+		cout.flush();
 
 		//setup the initial approximations
 		ew.Allocate(   padding, padding, sizeof(Complex));
 		ewfft.Allocate(padding, padding, sizeof(Complex));
 		
+		fftw_plan fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
+//		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
+
 		for(int x = 0; x < size; x++)
 			for(int y = 0; y < size; y++)
 				ew[x][y] = Complex(1, 0);
 
-		fft2d fftfwd(-1, ew, ewfft);
-		fftfwd.fft(ew, ewfft);
+		fftw_execute(fftfwd);
 
 		cout << "done in " << (int)((Time() - start)*1000) << " msec\n";
+		cout.flush();
 
 		// Run iterations
 		for(int iter = 0; iter < iters; iter++){
 
 			Time startiter;
 			cout << "Iter " << iter << " ... ";
+			cout.flush();
 
-			#pragma omp parallel
+			#pragma omp parallel for schedule(dynamic)
 			for(int p = 0; p < nplanes; p++){
 				Plane * plane = planes[p];
 
@@ -248,9 +257,7 @@ public:
 						}
 					}
 				}
-				plane->fftbwd.fft(plane->ewfft, plane->ew);
-				
-				
+				fftw_execute(plane->fftbwd);
 		
 				// Replace EW amplitudes
 				//EWplanes(p,1:(N/2)) = Astack(p,:).*exp(1i*angle(EWplanes(p,1:(N/2))));
@@ -269,12 +276,12 @@ public:
 						}
 					}
 				}
-				plane->fftfwd.fft(plane->ew, plane->ewfft);
+				fftw_execute(plane->fftfwd);
 			}
 		
 			// Find mean EW and output old phase
 			//EWfft = mean(EWplanesfft,1);	
-			#pragma omp parallel
+			#pragma omp parallel for schedule(dynamic)
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
 					Complex mean = 0;
