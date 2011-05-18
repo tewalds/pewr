@@ -276,7 +276,7 @@ public:
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
 						if(q2(x,y) <= qmax*qmax){
-							plane->ewfft[x][y] *= plane->prop[x][y];
+							plane->ewfft[x][y] = ewfft[x][y]*plane->prop[x][y];
 						}else{
 							plane->ewfft[x][y] = 0;
 						}
