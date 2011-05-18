@@ -60,9 +60,7 @@ struct Plane {
 		T in;
 		for(int x = 0; x < size; x++){
 			for(int y = 0; y < size; y++){
-				ifs >> in;
-//				ifs.read( &in, sizeof(T));
-
+				ifs.read( (char *) & in, sizeof(T));
 				image[x][y] = in;
 			}
 		}
