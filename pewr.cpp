@@ -71,9 +71,9 @@ struct Plane {
 
 	void dump(const string & name){
 		ofstream ofs(name.c_str(), ios::out | ios::binary);
-		for(int x = 0; x < size; x++)
-			for(int y = 0; y < size; y++)
-				ofs << real(ew[x][y]);
+		for(int x = 0; x < padding; x++)
+			for(int y = 0; y < padding; y++)
+				ofs.write((const char*)& ew[x][y], sizeof(Complex));
 		ofs.close();
 	}
 
@@ -320,9 +320,9 @@ public:
 				fftw_execute(fftbwd); //ewfft -> ew
 
 				ofstream ofs((output + "." + to_str(iter)).c_str(), ios::out | ios::binary);
-				for(int x = 0; x < size; x++)
-					for(int y = 0; y < size; y++)
-						ofs << real(ew[x][y]) << imag(ew[x][y]);
+				for(int x = 0; x < padding; x++)
+					for(int y = 0; y < padding; y++)
+						ofs.write((const char*)& ew[x][y], sizeof(Complex));
 				ofs.close();
 			}
 
