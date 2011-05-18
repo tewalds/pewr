@@ -120,8 +120,8 @@ class PEWR {
 	int             outputlast; //output the last few iterations
 
 	double q2(int x, int y){
-		double qx = -0.5/psize + x/(padding*psize);
-		double qy = -0.5/psize + y/(padding*psize);
+		double qx = (((x + padding/2) % padding) - padding/2) / ( padding * psize);
+		double qy = (((y + padding/2) % padding) - padding/2) / ( padding * psize);
 		return qx*qx + qy*qy;
 	}
 
@@ -292,6 +292,7 @@ public:
 
 				// Back propagate EW to zero plane
 				// EWplanesfft(a2,:) = fft(EWplanes(a2,:)).*backprop(a2,:).*A;
+				fftw_execute(plane->fftfwd);
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
 						if(q2(x,y) <= qmax*qmax){
@@ -301,7 +302,6 @@ public:
 						}
 					}
 				}
-				fftw_execute(plane->fftfwd);
 			}
 		
 			// Find mean EW and output old phase
