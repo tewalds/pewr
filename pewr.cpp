@@ -223,8 +223,8 @@ public:
 
 		//compute propagation arrays
 		for(int i = 0; i < nplanes; i++){
-			for(int x = 0; x < size; x++){
-				for(int y = 0; y < size; y++){
+			for(int x = 0; x < padding; x++){
+				for(int y = 0; y < padding; y++){
 					double chi = M_PI * lambda * planes[i]->fval * q2(x, y);
 					planes[i]->prop[x][y] = polar(1.0, -chi);
 					planes[i]->backprop[x][y] = polar(1.0, chi);
