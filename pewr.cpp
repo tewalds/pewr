@@ -296,9 +296,9 @@ public:
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
 						if(q2(x,y) <= qmax*qmax){
-							plane->ew[x][y] *= plane->backprop[x][y];
+							plane->ewfft[x][y] *= plane->backprop[x][y];
 						}else{
-							plane->ew[x][y] = 0;
+							plane->ewfft[x][y] = 0;
 						}
 					}
 				}
