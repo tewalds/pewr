@@ -83,13 +83,6 @@ struct Plane {
 		return sum/(size*size);
 	}
 
-	void normalize(double divisor){
-		double factor = 1.0/divisor;
-		for(int x = 0; x < size; x++)
-			for(int y = 0; y < size; y++)
-				image[x][y] *= factor;
-	}
-
 	void compute_amplitudes(){
 		for(int x = 0; x < size; x++)
 			for(int y = 0; y < size; y++)
@@ -222,7 +215,7 @@ public:
 			mean += planes[i]->mean();
 		mean /= nplanes;
 		for(int i = 0; i < nplanes; i++)
-			planes[i]->normalize(mean);
+			planes[i]->image *= 1.0/mean;
 
 		//compute amplitudes	
 		for(int i = 0; i < nplanes; i++)
@@ -282,10 +275,7 @@ public:
 				}
 				fftw_execute(plane->fftbwd);
 
-				double factor = 1.0/(padding*padding);
-				for(int x = 0; x < padding; x++)
-					for(int y = 0; y < padding; y++)
-						plane->ew[x][y] *= factor;
+				plane->ew *= 1.0/(padding*padding);
 
 				// Replace EW amplitudes
 				//EWplanes(p,1:(N/2)) = Astack(p,:).*exp(1i*angle(EWplanes(p,1:(N/2))));
@@ -322,10 +312,7 @@ public:
 			if(((outputfreq > 0 && iter % outputfreq == 0) || iters - iter < outputlast) && output.size() > 0){
 				fftw_execute(fftbwd); //ewfft -> ew
 
-				double factor = 1.0/(padding*padding);
-				for(int x = 0; x < padding; x++)
-					for(int y = 0; y < padding; y++)
-						ew[x][y] *= factor;
+				ew *= 1.0/(padding*padding);
 
 				ofstream ofs((output + "." + to_str(iter)).c_str(), ios::out | ios::binary);
 				for(int x = 0; x < padding; x++)
