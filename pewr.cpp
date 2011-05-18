@@ -281,7 +281,12 @@ public:
 					}
 				}
 				fftw_execute(plane->fftbwd);
-		
+
+				double factor = 1.0/(padding*padding);
+				for(int x = 0; x < padding; x++)
+					for(int y = 0; y < padding; y++)
+						plane->ew[x][y] *= factor;
+
 				// Replace EW amplitudes
 				//EWplanes(p,1:(N/2)) = Astack(p,:).*exp(1i*angle(EWplanes(p,1:(N/2))));
 				for(int x = 0; x < size; x++)
