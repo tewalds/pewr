@@ -322,6 +322,11 @@ public:
 			if(((outputfreq > 0 && iter % outputfreq == 0) || iters - iter < outputlast) && output.size() > 0){
 				fftw_execute(fftbwd); //ewfft -> ew
 
+				double factor = 1.0/(padding*padding);
+				for(int x = 0; x < padding; x++)
+					for(int y = 0; y < padding; y++)
+						ew[x][y] *= factor;
+
 				ofstream ofs((output + "." + to_str(iter)).c_str(), ios::out | ios::binary);
 				for(int x = 0; x < padding; x++)
 					for(int y = 0; y < padding; y++)
