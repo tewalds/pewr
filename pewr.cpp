@@ -251,8 +251,8 @@ public:
 		fftw_plan fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
 		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
 
-		for(int x = 0; x < size; x++)
-			for(int y = 0; y < size; y++)
+		for(int x = 0; x < padding; x++)
+			for(int y = 0; y < padding; y++)
 				ew[x][y] = Complex(1, 0);
 
 		fftw_execute(fftfwd);
