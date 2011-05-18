@@ -44,8 +44,8 @@ struct Plane {
 	
 	Plane(int _size, int _padding) : 
 		size(_size), padding(_padding),
-		image(    padding, padding, sizeof(double)),
-		amplitude(padding, padding, sizeof(double)),
+		image(    size, size, sizeof(double)),
+		amplitude(size, size, sizeof(double)),
 		prop(     padding, padding, sizeof(Complex)),
 		backprop( padding, padding, sizeof(Complex)),
 		ew(       padding, padding, sizeof(Complex)),
