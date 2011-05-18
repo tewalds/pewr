@@ -8,7 +8,7 @@ ifdef DEBUG
 	CPPFLAGS	+= -g3 -Wall
 else
 	CPPFLAGS	+= -O3 -fopenmp -funroll-loops -Wall -march=native
-#	CFLAGS		+= -fopenmp -O3 -funroll-loops -ffast-math -funsafe-math-optimizations -ftree-vectorize -ftree-loop-im -mfpmath=sse -mmmx -msse -msse2 -msse3 -m3dnow
+#	CPPFLAGS	+= -O3 -fopenmp -funroll-loops -ffast-math -funsafe-math-optimizations -ftree-vectorize -ftree-loop-im -mfpmath=sse -mmmx -msse -msse2 -msse3 -m3dnow
 endif
 
 #profile with callgrind, works well with DEBUG mode
