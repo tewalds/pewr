@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include <stdint.h>
 
 #include <fftw3.h>
@@ -23,6 +24,11 @@ typedef std::complex<double> Complex;
 typedef array2<Complex> ArrayComplex;
 typedef array2<double>  ArrayDouble;
 
+template <class T> std::string to_str(T a){
+	std::stringstream out;
+	out << a;
+	return out.str();
+}
 
 struct Plane {
 	int size, padding;
@@ -63,6 +69,14 @@ struct Plane {
 		ifs.close();
 	}
 
+	void dump(const string & name){
+		ofstream ofs(name.c_str(), ios::out | ios::binary);
+		for(int x = 0; x < size; x++)
+			for(int y = 0; y < size; y++)
+				ofs << real(ew[x][y]);
+		ofs.close();
+	}
+
 	double mean(){
 		double sum = 0;
 		for(int x = 0; x < size; x++)
@@ -101,6 +115,9 @@ class PEWR {
 	vector<Plane *> planes;  // stack of planes
 	ArrayComplex    ew;      // current best guess of the exit wave in space domain
 	ArrayComplex    ewfft;   // current best guess of the exit wave in frequency domain
+	string          output;  // prefix for the name of the output file
+	int             outputfreq; //how often to output
+	int             outputlast; //output the last few iterations
 
 	double q2(int x, int y){
 		double qx = -0.5/psize + x/(padding*psize);
@@ -117,6 +134,8 @@ public:
 		lambda  = 0;
 		psize   = 0;
 		iters   = 0;
+		outputfreq = 0;
+		outputlast = 1;
 
 		string type;
 
@@ -156,6 +175,12 @@ public:
 				ifs >> iters;
 			}else if(cmd == "type"){
 				ifs >> type;
+			}else if(cmd == "output"){
+				ifs >> output;
+			}else if(cmd == "outputfreq"){
+				ifs >> outputfreq;
+			}else if(cmd == "outputlast"){
+				ifs >> outputlast;
 			}else if(cmd == "planes"){
 				if(nplanes == 0)
 					die(1, "nplanes size must be set before planes");
@@ -224,7 +249,7 @@ public:
 		ewfft.Allocate(padding, padding, sizeof(Complex));
 		
 		fftw_plan fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
-//		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
+		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
 
 		for(int x = 0; x < size; x++)
 			for(int y = 0; y < size; y++)
@@ -236,7 +261,7 @@ public:
 		cout.flush();
 
 		// Run iterations
-		for(int iter = 0; iter < iters; iter++){
+		for(int iter = 1; iter <= iters; iter++){
 
 			Time startiter;
 			cout << "Iter " << iter << " ... ";
@@ -290,6 +315,17 @@ public:
 					ewfft[x][y] = mean / (double)nplanes;
 				}
 			}
+
+			if(((outputfreq > 0 && iter % outputfreq == 0) || iters - iter < outputlast) && output.size() > 0){
+				fftw_execute(fftbwd); //ewfft -> ew
+
+				ofstream ofs((output + "." + to_str(iter)).c_str(), ios::out | ios::binary);
+				for(int x = 0; x < size; x++)
+					for(int y = 0; y < size; y++)
+						ofs << real(ew[x][y]) << imag(ew[x][y]);
+				ofs.close();
+			}
+
 			cout << " done in " << (int)((Time() - startiter)*1000) << " msec\n";
 		}
 	}
