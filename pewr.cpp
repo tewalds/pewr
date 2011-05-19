@@ -38,7 +38,6 @@ struct Plane {
 	ArrayDouble  image;     // initial image
 	ArrayDouble  amplitude; // initial amplitude
 	ArrayComplex prop;      // propagation value to defocus the exit wave
-	ArrayComplex backprop;  // back propagation value to refocus the exit wave
 	ArrayComplex ew;        // exit wave plane in the real domain
 	fftw_plan    fftfwd;    // fast fourier transform in the forward direction space -> freq
 	fftw_plan    fftbwd;    // fast fourier transform in the reverse direction freq -> space
@@ -48,7 +47,6 @@ struct Plane {
 		image(    size, size, sizeof(double)),
 		amplitude(size, size, sizeof(double)),
 		prop(     padding, padding, sizeof(Complex)),
-		backprop( padding, padding, sizeof(Complex)),
 		ew(       padding, padding, sizeof(Complex))
 		{
 		fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ew()), FFTW_FORWARD, FFTW_MEASURE);
@@ -247,7 +245,6 @@ public:
 				for(int y = 0; y < padding; y++){
 					double chi = M_PI * lambda * planes[i]->fval * q2(x, y);
 					planes[i]->prop[x][y] = polar(1.0, -chi);
-					planes[i]->backprop[x][y] = polar(1.0, chi);
 				}
 			}
 		}
@@ -347,7 +344,7 @@ public:
 					if(tophat[x][y]){
 						Complex mean = 0;
 						for(int p = 0; p < nplanes; p++)
-							mean += planes[p]->ew[x][y] * planes[p]->backprop[x][y];
+							mean += planes[p]->ew[x][y] * conj(planes[p]->prop[x][y]);
 						ewfft[x][y] = mean / (double)nplanes;
 					}else{
 						ewfft[x][y] = 0;
