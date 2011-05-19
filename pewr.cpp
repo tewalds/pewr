@@ -11,6 +11,7 @@
 
 #include <fftw3.h>
 
+#define NDEBUG
 #include "Array.h"
 #include "time.h"
 
@@ -96,6 +97,7 @@ void die(int code, const string & str){
 }
 
 class PEWR {
+	bool            verbose; // output the timings of each part of the algorithm
 	int             size;    // size of the image without padding
 	int             padding; // size of the planes with padding
 	int             nplanes; // number of planes
@@ -104,6 +106,7 @@ class PEWR {
 	double          psize;   // pixel size
 	double          qmax;    // aperature size for the top hat filter
 	vector<Plane *> planes;  // stack of planes
+	ArrayDouble     q2vec;   // precompute q2
 	ArrayComplex    ew;      // current best guess of the exit wave in space domain
 	ArrayComplex    ewfft;   // current best guess of the exit wave in frequency domain
 	string          output;  // prefix for the name of the output file
@@ -118,6 +121,7 @@ class PEWR {
 
 public:
 	PEWR(const string & config){
+		verbose = false;
 		size    = 0;
 		padding = 0;
 		nplanes = 0;
@@ -149,6 +153,8 @@ public:
 				ifs >> size;
 			}else if(cmd == "padding"){
 				ifs >> padding;
+			}else if(cmd == "verbose"){
+				verbose = true;
 			}else if(cmd == "nplanes"){
 				if(size == 0 || padding == 0)
 					die(1, "padding and size must be set before nplanes");
@@ -227,12 +233,18 @@ public:
 		for(int i = 0; i < nplanes; i++)
 			planes[i]->compute_amplitudes();
 
+		//precompute q2
+		q2vec.Allocate(padding, padding, sizeof(double));
+		for(int x = 0; x < padding; x++)
+			for(int y = 0; y < padding; y++)
+				q2vec[x][y] = q2(x, y);
+
 		//compute propagation arrays
 		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++){
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
-					double chi = M_PI * lambda * planes[i]->fval * q2(x, y);
+					double chi = M_PI * lambda * planes[i]->fval * q2vec[x][y];
 					planes[i]->prop[x][y] = polar(1.0, -chi);
 					planes[i]->backprop[x][y] = polar(1.0, chi);
 				}
@@ -259,31 +271,55 @@ public:
 		cout << "done in " << (int)((Time() - start)*1000) << " msec\n";
 		cout.flush();
 
+		double qmax2 = qmax*qmax;
+
 		// Run iterations
 		for(int iter = 1; iter <= iters; iter++){
 
 			Time startiter;
-			cout << "Iter " << iter << " ... ";
+			cout << "Iter " << iter << " ...";
 			cout.flush();
+
+			double timedelta[7];
+			for(int i = 0; i < 7; i++)
+				timedelta[i] = 0;
 
 			#pragma omp parallel for schedule(dynamic)
 			for(int p = 0; p < nplanes; p++){
 				Plane * plane = planes[p];
 
+				Time time1, time2;
+
 				// Propagate EW to each plane
 				// EWplanes(p,:) = ifft(EWfft.*prop(p,:).*A);
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
-						if(q2(x,y) <= qmax*qmax){
+						if(q2vec[x][y] <= qmax2){
 							plane->ewfft[x][y] = ewfft[x][y]*plane->prop[x][y];
 						}else{
-							plane->ewfft[x][y] = 0;
+//							plane->ewfft[x][y] = 0;
 						}
 					}
 				}
+
+				if(verbose){
+					time2 = Time();
+					timedelta[0] += time2 - time1;
+				}
+
 				fftw_execute(plane->fftbwd);
 
+				if(verbose){
+					time1 = Time();
+					timedelta[1] += time1 - time2;
+				}
+
 				plane->ew *= 1.0/(padding*padding);
+
+				if(verbose){
+					time2 = Time();
+					timedelta[2] += time2 - time1;
+				}
 
 				// Replace EW amplitudes
 				//EWplanes(p,1:(N/2)) = Astack(p,:).*exp(1i*angle(EWplanes(p,1:(N/2))));
@@ -291,31 +327,56 @@ public:
 					for(int y = 0; y < size; y++)
 						plane->ew[x][y] = polar(plane->amplitude[x][y], arg(plane->ew[x][y]));
 
+				if(verbose){
+					time1 = Time();
+					timedelta[3] += time1 - time2;
+				}
+
 				// Back propagate EW to zero plane
 				// EWplanesfft(a2,:) = fft(EWplanes(a2,:)).*backprop(a2,:).*A;
 				fftw_execute(plane->fftfwd);
+
+				if(verbose){
+					time2 = Time();
+					timedelta[4] += time2 - time1;
+				}
+
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
-						if(q2(x,y) <= qmax*qmax){
+						if(q2vec[x][y] <= qmax2){
 							plane->ewfft[x][y] *= plane->backprop[x][y];
 						}else{
 							plane->ewfft[x][y] = 0;
 						}
 					}
 				}
+
+				if(verbose){
+					time1 = Time();
+					timedelta[5] += time1 - time2;
+				}
 			}
 		
+			Time time1;
+
 			// Find mean EW and output old phase
 			//EWfft = mean(EWplanesfft,1);	
 			#pragma omp parallel for schedule(guided)
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
-					Complex mean = 0;
-					for(int p = 0; p < nplanes; p++)
-						mean += planes[p]->ewfft[x][y];
-					ewfft[x][y] = mean / (double)nplanes;
+					if(q2vec[x][y] <= qmax2){
+						Complex mean = 0;
+						for(int p = 0; p < nplanes; p++)
+							mean += planes[p]->ewfft[x][y];
+						ewfft[x][y] = mean / (double)nplanes;
+					}else{
+						ewfft[x][y] = 0;
+					}
 				}
 			}
+
+			if(verbose)
+				timedelta[6] += Time() - time1;
 
 			if(((outputfreq > 0 && iter % outputfreq == 0) || iters - iter < outputlast) && output.size() > 0){
 				fftw_execute(fftbwd); //ewfft -> ew
@@ -328,6 +389,10 @@ public:
 						ofs.write((const char*)& ew[x][y], sizeof(Complex));
 				ofs.close();
 			}
+
+			if(verbose)
+				for(int i = 0; i < 7; i++)
+					cout << " " << (int)(timedelta[i]*1000);
 
 			cout << " done in " << (int)((Time() - startiter)*1000) << " msec\n";
 		}
