@@ -24,6 +24,7 @@ typedef std::complex<double> Complex;
 
 typedef array2<Complex> ArrayComplex;
 typedef array2<double>  ArrayDouble;
+typedef array2<bool>    ArrayBool;
 
 template <class T> std::string to_str(T a){
 	std::stringstream out;
@@ -105,7 +106,7 @@ class PEWR {
 	double          psize;   // pixel size
 	double          qmax;    // aperature size for the top hat filter
 	vector<Plane *> planes;  // stack of planes
-	ArrayDouble     q2vec;   // precompute q2
+	ArrayBool       tophat;  // precompute q2 boundary
 	ArrayComplex    ew;      // current best guess of the exit wave in space domain
 	ArrayComplex    ewfft;   // current best guess of the exit wave in frequency domain
 	string          output;  // prefix for the name of the output file
@@ -233,17 +234,19 @@ public:
 			planes[i]->compute_amplitudes();
 
 		//precompute q2
-		q2vec.Allocate(padding, padding, sizeof(double));
+		double qmax2 = qmax*qmax;
+		tophat.Allocate(padding, padding, sizeof(double));
+		#pragma omp parallel for schedule(guided)
 		for(int x = 0; x < padding; x++)
 			for(int y = 0; y < padding; y++)
-				q2vec[x][y] = q2(x, y);
+				tophat[x][y] = (q2(x, y) <= qmax2);
 
 		//compute propagation arrays
 		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++){
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
-					double chi = M_PI * lambda * planes[i]->fval * q2vec[x][y];
+					double chi = M_PI * lambda * planes[i]->fval * q2(x, y);
 					planes[i]->prop[x][y] = polar(1.0, -chi);
 					planes[i]->backprop[x][y] = polar(1.0, chi);
 				}
@@ -270,8 +273,6 @@ public:
 		cout << "done in " << (int)((Time() - start)*1000) << " msec\n";
 		cout.flush();
 
-		double qmax2 = qmax*qmax;
-
 		// Run iterations
 		for(int iter = 1; iter <= iters; iter++){
 
@@ -292,7 +293,7 @@ public:
 				// Propagate EW to each plane
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
-						if(q2vec[x][y] <= qmax2){
+						if(tophat[x][y]){
 							plane->ew[x][y] = ewfft[x][y]*plane->prop[x][y];
 						}else{
 							plane->ew[x][y] = 0;
@@ -344,7 +345,7 @@ public:
 			#pragma omp parallel for schedule(guided)
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
-					if(q2vec[x][y] <= qmax2){
+					if(tophat[x][y]){
 						Complex mean = 0;
 						for(int p = 0; p < nplanes; p++)
 							mean += planes[p]->ew[x][y] * planes[p]->backprop[x][y];
