@@ -8,7 +8,9 @@ ifdef DEBUG
 	CPPFLAGS	+= -g3 -Wall
 else
 	LDFLAGS     += -fopenmp
-	CPPFLAGS	+= -O3 -fopenmp -funroll-loops -Wall -march=native
+	CPPFLAGS    += -fopenmp
+	CPPFLAGS    += -march=native
+	CPPFLAGS	+= -O3 -funroll-loops -ffast-math -ftree-vectorize -ftree-loop-im -Wall
 #	CPPFLAGS	+= -O3 -fopenmp -funroll-loops -ffast-math -funsafe-math-optimizations -ftree-vectorize -ftree-loop-im -mfpmath=sse -mmmx -msse -msse2 -msse3 -m3dnow
 endif
 
