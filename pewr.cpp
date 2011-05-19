@@ -291,13 +291,12 @@ public:
 				Time time1, time2;
 
 				// Propagate EW to each plane
-				// EWplanes(p,:) = ifft(EWfft.*prop(p,:).*A);
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
 						if(q2vec[x][y] <= qmax2){
 							plane->ewfft[x][y] = ewfft[x][y]*plane->prop[x][y];
 						}else{
-//							plane->ewfft[x][y] = 0;
+							plane->ewfft[x][y] = 0;
 						}
 					}
 				}
@@ -307,7 +306,7 @@ public:
 					timedelta[0] += time2 - time1;
 				}
 
-				fftw_execute(plane->fftbwd);
+				fftw_execute(plane->fftbwd); //plane->ewfft => plane->ew
 
 				if(verbose){
 					time1 = Time();
@@ -322,7 +321,6 @@ public:
 				}
 
 				// Replace EW amplitudes
-				//EWplanes(p,1:(N/2)) = Astack(p,:).*exp(1i*angle(EWplanes(p,1:(N/2))));
 				for(int x = 0; x < size; x++)
 					for(int y = 0; y < size; y++)
 						plane->ew[x][y] = polar(plane->amplitude[x][y], arg(plane->ew[x][y]));
@@ -332,42 +330,25 @@ public:
 					timedelta[3] += time1 - time2;
 				}
 
-				// Back propagate EW to zero plane
-				// EWplanesfft(a2,:) = fft(EWplanes(a2,:)).*backprop(a2,:).*A;
-				fftw_execute(plane->fftfwd);
+				// Back propagate EW to zero plane, backpropagation is merged with mean
+				fftw_execute(plane->fftfwd); //plane->ew => plane->ewfft
 
 				if(verbose){
 					time2 = Time();
 					timedelta[4] += time2 - time1;
 				}
-
-				for(int x = 0; x < padding; x++){
-					for(int y = 0; y < padding; y++){
-						if(q2vec[x][y] <= qmax2){
-							plane->ewfft[x][y] *= plane->backprop[x][y];
-						}else{
-							plane->ewfft[x][y] = 0;
-						}
-					}
-				}
-
-				if(verbose){
-					time1 = Time();
-					timedelta[5] += time1 - time2;
-				}
 			}
 		
 			Time time1, time2;
 
-			// Find mean EW and output old phase
-			//EWfft = mean(EWplanesfft,1);	
+			// Backpropagate and find mean EW
 			#pragma omp parallel for schedule(guided)
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
 					if(q2vec[x][y] <= qmax2){
 						Complex mean = 0;
 						for(int p = 0; p < nplanes; p++)
-							mean += planes[p]->ewfft[x][y];
+							mean += planes[p]->ewfft[x][y] * planes[p]->backprop[x][y];
 						ewfft[x][y] = mean / (double)nplanes;
 					}else{
 						ewfft[x][y] = 0;
@@ -380,6 +361,7 @@ public:
 				timedelta[6] += time2 - time1;
 			}
 
+			//output exit wave
 			if(((outputfreq > 0 && iter % outputfreq == 0) || iters - iter < outputlast) && output.size() > 0){
 				fftw_execute(fftbwd); //ewfft -> ew
 
