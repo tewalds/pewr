@@ -280,8 +280,8 @@ public:
 			cout << "Iter " << iter << " ...";
 			cout.flush();
 
-			double timedelta[7];
-			for(int i = 0; i < 7; i++)
+			double timedelta[8];
+			for(int i = 0; i < 8; i++)
 				timedelta[i] = 0;
 
 			#pragma omp parallel for schedule(dynamic)
@@ -357,7 +357,7 @@ public:
 				}
 			}
 		
-			Time time1;
+			Time time1, time2;
 
 			// Find mean EW and output old phase
 			//EWfft = mean(EWplanesfft,1);	
@@ -375,8 +375,10 @@ public:
 				}
 			}
 
-			if(verbose)
-				timedelta[6] += Time() - time1;
+			if(verbose){
+				time2 = Time();
+				timedelta[6] += time2 - time1;
+			}
 
 			if(((outputfreq > 0 && iter % outputfreq == 0) || iters - iter < outputlast) && output.size() > 0){
 				fftw_execute(fftbwd); //ewfft -> ew
@@ -390,8 +392,13 @@ public:
 				ofs.close();
 			}
 
+			if(verbose){
+				time1 = Time();
+				timedelta[7] += time1 - time2;
+			}
+
 			if(verbose)
-				for(int i = 0; i < 7; i++)
+				for(int i = 0; i < 8; i++)
 					cout << " " << (int)(timedelta[i]*1000);
 
 			cout << " done in " << (int)((Time() - startiter)*1000) << " msec\n";
