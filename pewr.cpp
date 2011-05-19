@@ -40,7 +40,6 @@ struct Plane {
 	ArrayComplex prop;      // propagation value to defocus the exit wave
 	ArrayComplex backprop;  // back propagation value to refocus the exit wave
 	ArrayComplex ew;        // exit wave plane in the real domain
-	ArrayComplex ewfft;     // exit wave plane in the frequency domain
 	fftw_plan    fftfwd;    // fast fourier transform in the forward direction space -> freq
 	fftw_plan    fftbwd;    // fast fourier transform in the reverse direction freq -> space
 	
