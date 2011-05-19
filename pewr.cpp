@@ -49,11 +49,10 @@ struct Plane {
 		amplitude(size, size, sizeof(double)),
 		prop(     padding, padding, sizeof(Complex)),
 		backprop( padding, padding, sizeof(Complex)),
-		ew(       padding, padding, sizeof(Complex)),
-		ewfft(    padding, padding, sizeof(Complex))
+		ew(       padding, padding, sizeof(Complex))
 		{
-		fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
-		fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
+		fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ew()), FFTW_FORWARD, FFTW_MEASURE);
+		fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
 	}
 
 	template <class T> void import(const string & name){
@@ -294,9 +293,9 @@ public:
 				for(int x = 0; x < padding; x++){
 					for(int y = 0; y < padding; y++){
 						if(q2vec[x][y] <= qmax2){
-							plane->ewfft[x][y] = ewfft[x][y]*plane->prop[x][y];
+							plane->ew[x][y] = ewfft[x][y]*plane->prop[x][y];
 						}else{
-							plane->ewfft[x][y] = 0;
+							plane->ew[x][y] = 0;
 						}
 					}
 				}
@@ -348,7 +347,7 @@ public:
 					if(q2vec[x][y] <= qmax2){
 						Complex mean = 0;
 						for(int p = 0; p < nplanes; p++)
-							mean += planes[p]->ewfft[x][y] * planes[p]->backprop[x][y];
+							mean += planes[p]->ew[x][y] * planes[p]->backprop[x][y];
 						ewfft[x][y] = mean / (double)nplanes;
 					}else{
 						ewfft[x][y] = 0;
