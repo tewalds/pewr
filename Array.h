@@ -240,7 +240,9 @@ class array1 {
 #else
   typedef array1<T> opt;
 #endif
-  
+
+  T* begin() const { return v; }
+  T* end() const { return v + size; }
   T& operator [] (int ix) const {__check(ix,size,1,1); return v[ix];}
   T& operator () (int ix) const {__check(ix,size,1,1); return v[ix];}
   T* operator () () const {return v;}
