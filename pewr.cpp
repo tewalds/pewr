@@ -211,17 +211,24 @@ public:
 
 		//normalize
 		double mean = 0;
-		for(int i = 0; i < nplanes; i++)
-			mean += planes[i]->mean();
+		#pragma omp parallel for schedule(guided)
+		for(int i = 0; i < nplanes; i++){
+			double m = planes[i]->mean();
+			#pragma omp atomic
+			mean += m;
+		}
 		mean /= nplanes;
+		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++)
 			planes[i]->image *= 1.0/mean;
 
 		//compute amplitudes	
+		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++)
 			planes[i]->compute_amplitudes();
 
 		//compute propagation arrays
+		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++){
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
@@ -242,6 +249,7 @@ public:
 		fftw_plan fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
 		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
 
+		#pragma omp parallel for schedule(guided)
 		for(int x = 0; x < padding; x++)
 			for(int y = 0; y < padding; y++)
 				ew[x][y] = Complex(1, 0);
@@ -299,7 +307,7 @@ public:
 		
 			// Find mean EW and output old phase
 			//EWfft = mean(EWplanesfft,1);	
-			#pragma omp parallel for schedule(dynamic)
+			#pragma omp parallel for schedule(guided)
 			for(int x = 0; x < padding; x++){
 				for(int y = 0; y < padding; y++){
 					Complex mean = 0;
