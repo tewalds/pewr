@@ -1,12 +1,13 @@
 .PHONY: clean fresh run gendeps profile
 
 
-LDFLAGS   += -lfftw3 -lm -fopenmp
+LDFLAGS   += -lfftw3 -lm
 OBJECTS		= pewr.o
 
 ifdef DEBUG
 	CPPFLAGS	+= -g3 -Wall
 else
+	LDFLAGS     += -fopenmp
 	CPPFLAGS	+= -O3 -fopenmp -funroll-loops -Wall -march=native
 #	CPPFLAGS	+= -O3 -fopenmp -funroll-loops -ffast-math -funsafe-math-optimizations -ftree-vectorize -ftree-loop-im -mfpmath=sse -mmmx -msse -msse2 -msse3 -m3dnow
 endif
