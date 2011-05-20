@@ -198,10 +198,21 @@ public:
 				}
 			}else if(cmd == "fvals"){
 				if(nplanes == 0)
-					die(1, "nplanes size must be set before planes");
+					die(1, "nplanes size must be set before fvals");
 
 				for(int i = 0; i < nplanes; i++)
 					ifs >> planes[i]->fval;
+			}else if(cmd == "frange"){
+				if(nplanes == 0)
+					die(1, "nplanes size must be set before frange");
+
+				int start, incr;
+				ifs >> start >> incr;
+
+				for(int i = 0; i < nplanes; i++){
+					planes[i]->fval = start;
+					start += incr;
+				}
 			}else{
 				die(1, "Unknown command " + cmd);
 			}
