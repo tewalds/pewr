@@ -130,11 +130,12 @@ public:
 		outputlast = 1;
 
 		string type;
+		int startiter = 1;
 
 		ifstream ifs(config.c_str(), ifstream::in);
 
 		Time start;
-		cout << "Loading config file ... ";
+		cout << "Parsing config file, loading data ... ";
 		cout.flush();
 
 		while(ifs.good()){
@@ -150,6 +151,9 @@ public:
 				ifs >> size;
 			}else if(cmd == "padding"){
 				ifs >> padding;
+
+				ew.Allocate(   padding, padding, sizeof(Complex));
+				ewfft.Allocate(padding, padding, sizeof(Complex));
 			}else if(cmd == "verbose"){
 				verbose = true;
 			}else if(cmd == "nplanes"){
@@ -213,6 +217,15 @@ public:
 					planes[i]->fval = start;
 					start += incr;
 				}
+			}else if(cmd == "guess"){
+				string name;
+				ifs >> name >> startiter;
+
+				ifstream ifguess(name.c_str(), ios::in | ios::binary);
+				for(int x = 0; x < size; x++)
+					for(int y = 0; y < size; y++)
+						ifguess.read( (char *) & ew[x][y], sizeof(Complex));
+				ifguess.close();
 			}else{
 				die(1, "Unknown command " + cmd);
 			}
@@ -220,7 +233,7 @@ public:
 
 		ifs.close();
 
-		cout << "normalizing data ... ";
+		cout << "precomputing data ... ";
 		cout.flush();
 
 		//normalize
@@ -260,20 +273,16 @@ public:
 			}
 		}
 
-		cout << "initializing approx ... ";
-		cout.flush();
-
-		//setup the initial approximations
-		ew.Allocate(   padding, padding, sizeof(Complex));
-		ewfft.Allocate(padding, padding, sizeof(Complex));
-		
+		//setup the base fftw plans
 		fftw_plan fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
 		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
 
+		//setup the initial approximations
 		#pragma omp parallel for schedule(guided)
-		for(int x = 0; x < padding; x++)
-			for(int y = 0; y < padding; y++)
-				ew[x][y] = Complex(1, 0);
+		if(startiter > 1)
+			for(int x = 0; x < padding; x++)
+				for(int y = 0; y < padding; y++)
+					ew[x][y] = Complex(1, 0);
 
 		fftw_execute(fftfwd);
 
@@ -281,7 +290,7 @@ public:
 		cout.flush();
 
 		// Run iterations
-		for(int iter = 1; iter <= iters; iter++){
+		for(int iter = startiter; iter <= iters; iter++){
 
 			Time startiter;
 			cout << "Iter " << iter << " ...";
