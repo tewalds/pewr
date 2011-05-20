@@ -238,12 +238,9 @@ public:
 
 		//normalize
 		double mean = 0;
-		#pragma omp parallel for schedule(guided)
-		for(int i = 0; i < nplanes; i++){
-			double m = planes[i]->mean();
-			#pragma omp atomic
-			mean += m;
-		}
+		#pragma omp parallel for schedule(guided) reduction(+:mean)
+		for(int i = 0; i < nplanes; i++)
+			mean += planes[i]->mean();
 		mean /= nplanes;
 		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++)
