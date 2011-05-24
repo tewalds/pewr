@@ -35,8 +35,7 @@ template <class T> std::string to_str(T a){
 struct Plane {
 	int size, padding;
 	double       fval;      // focal plane
-	ArrayDouble  image;     // initial image
-	ArrayDouble  amplitude; // initial amplitude
+	ArrayDouble  amplitude; // amplitudes, stores the initial image until converted to amplitudes
 	ArrayComplex prop;      // propagation value to defocus the exit wave
 	ArrayComplex ew;        // exit wave plane in the real domain
 	fftw_plan    fftfwd;    // fast fourier transform in the forward direction space -> freq
@@ -44,7 +43,6 @@ struct Plane {
 	
 	Plane(int _size, int _padding) : 
 		size(_size), padding(_padding),
-		image(    size, size, sizeof(double)),
 		amplitude(size, size, sizeof(double)),
 		prop(     padding, padding, sizeof(Complex)),
 		ew(       padding, padding, sizeof(Complex))
@@ -59,7 +57,7 @@ struct Plane {
 		for(int x = 0; x < size; x++){
 			for(int y = 0; y < size; y++){
 				ifs.read( (char *) & in, sizeof(T));
-				image[x][y] = in;
+				amplitude[x][y] = in;
 			}
 		}
 		ifs.close();
@@ -77,14 +75,14 @@ struct Plane {
 		double sum = 0;
 		for(int x = 0; x < size; x++)
 			for(int y = 0; y < size; y++)
-				sum += image[x][y];
+				sum += amplitude[x][y];
 		return sum/(size*size);
 	}
 
 	void compute_amplitudes(){
 		for(int x = 0; x < size; x++)
 			for(int y = 0; y < size; y++)
-				amplitude[x][y] = sqrt(abs(image[x][y]));
+				amplitude[x][y] = sqrt(abs(amplitude[x][y]));
 	}
 };
 
@@ -95,7 +93,7 @@ void die(int code, const string & str){
 
 class PEWR {
 	bool            verbose; // output the timings of each part of the algorithm
-	int             size;    // size of the image without padding
+	int             size;    // size of the planes without padding
 	int             padding; // size of the planes with padding
 	int             nplanes; // number of planes
 	int             iters;   // number of iterations
@@ -255,7 +253,7 @@ public:
 		mean /= nplanes;
 		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++)
-			planes[i]->image *= 1.0/mean;
+			planes[i]->amplitude *= 1.0/mean;
 
 		//compute amplitudes	
 		#pragma omp parallel for schedule(guided)
