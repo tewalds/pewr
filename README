@@ -1,0 +1,97 @@
+PEWR - Parallelized Exit Wave Reconstruction
+by Timo Ewalds and Colin Ophus
+version:  ???
+
+
+
+
+OVERVIEW
+
+-This code is designed for very fast iterative exit wave reconstruction of two-dimensional focal series taken with a high-resolution transmission electron microscope (HRTEM).
+-PEWR supports padding, resuming previous iterations, regular outputs, logarithmically timed outputs and non-linear spacing of focal planes.
+-The motivation behind PEWR is the exit wave reconstruction requires a very large number 
+-The generic algorithm is described in detail in:
+	L Allen, W McBride, N O’Leary and M Oxley, Exit wave reconstruction at atomic resolution, Ultramicroscopy 100 (2004) 91–104.
+-The specific additions to the algorithm is described in our paper:
+	??? 
+-Alternative, much more developed code is available for MacTempas (www.totalresolution.com).
+
+
+
+
+INSTALLATION
+
+-download source from github.com/tewalds/pewr
+-Linux:   compile by running "make"
+-OSX:     compile by running "make"
+-Windows: ???
+
+
+
+
+RUNNING PEWR
+
+pewr <config_file>
+
+
+
+
+CONFIGURATION
+
+-PEWR requires a configuration file as an input.
+-This configuration file should contain one input plus argument per line.
+-Required inputs:  (# gives description)
+	size <integer>    	# size of image in pixels.
+	padding <integer>	# size of reconstruction in pixels, must be >= size. 
+						# for zero padding, use padding = size.
+	psize <number>		# pixel dimensions in Angstroms/pixel
+	lambda <number>		# electron wavelength in Angstroms
+						# 80kV:  0.04176
+						# 300kV:	 0.01969
+	nplanes <integer>	# total number of input planes
+	qmax <number>		# maximum spatial frequency in inverse Angstroms (typical values are near 1)
+	iters <integer>		# number of iterations.
+	type <string>		# image format. Valid formats are int8, uint8, int16, ...
+	output <string>		# file name stem for the complex double output files.
+						# A ".#" will be appended onto the end of each output, where # is the iteration number.
+				
+
+
+						
+-Optional inputs
+	outputfreq <integer>		# How often to output the current exit wave in iterations.
+	outputlast <integer>		# Number of images to output at end of run.
+							# Example if iters == 100 and outputlast == 3, iterations 98, 99 and 100 will be written.
+
+	
+
+
+POSSIBLE FUTURE FEATURES
+
+-higher order abberations such as spherical (c3), stigmation (??) or coma (??).
+-image alignment.
+-suggesting to user approximate number of required iterations.
+-stop conditions other than total number of iterations
+-optimal focus plane finding.
+-over-relaxation factor.
+-adaptive relaxation.
+-noise filtering (adaptive Wiener).
+-late-time "jumping" to the asymptotic result.
+
+
+
+
+
+
+
+
+KNOWN BUGS
+
+???
+
+
+
+CONTACT
+
+programming:  timo@ewalds.ca
+algorithmic:  cophus@gmail.com
