@@ -107,8 +107,9 @@ class PEWR {
 	ArrayComplex    ew;      // current best guess of the exit wave in space domain
 	ArrayComplex    ewfft;   // current best guess of the exit wave in frequency domain
 	string          output;  // prefix for the name of the output file
-	int             outputfreq; //how often to output
-	int             outputlast; //output the last few iterations
+	int             outputfreq;  // output on a linear scale, ie if x=10, output 10, 20, 30, 40, 50, etc
+	double          outputpower; // output on an exponential scale, ie if x=2, output 2, 4, 8, 16, 32, etc
+	int             outputlast;  // output the last few iterations
 
 	double q2(int x, int y){
 		double qx = (((x + padding/2) % padding) - padding/2) / ( padding * psize);
@@ -127,6 +128,7 @@ public:
 		psize   = 0;
 		iters   = 0;
 		outputfreq = 0;
+		outputpower = 0;
 		outputlast = 1;
 
 		string type;
@@ -177,6 +179,8 @@ public:
 				ifs >> output;
 			}else if(cmd == "outputfreq"){
 				ifs >> outputfreq;
+			}else if(cmd == "outputpower"){
+				ifs >> outputpower;
 			}else if(cmd == "outputlast"){
 				ifs >> outputlast;
 			}else if(cmd == "planes"){
@@ -286,6 +290,11 @@ public:
 		cout << "done in " << (int)((Time() - start)*1000) << " msec\n";
 		cout.flush();
 
+		double nextpoweroutput = 1;
+		if(outputpower > 0)
+			while(nextpoweroutput > startiter)
+				nextpoweroutput *= outputpower;
+
 		// Run iterations
 		for(int iter = startiter; iter <= iters; iter++){
 
@@ -375,7 +384,13 @@ public:
 			}
 
 			//output exit wave
-			if(((outputfreq > 0 && iter % outputfreq == 0) || iters - iter < outputlast) && output.size() > 0){
+			if(((outputfreq > 0 && iter % outputfreq == 0) ||
+			    (outputpower > 0 && nextpoweroutput <= iter) ||
+			    (iters - iter < outputlast)) && output.size() > 0){
+
+				if(outputpower > 0)
+					nextpoweroutput *= outputpower;
+
 				fftw_execute(fftbwd); //ewfft -> ew
 
 				ew *= 1.0/(padding*padding);
