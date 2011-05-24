@@ -136,6 +136,13 @@ public:
 
 		ifstream ifs(config.c_str(), ifstream::in);
 
+		string::size_type dirpos = config.find("/");
+		if(dirpos != string::npos){
+			string dir = config.substr(0, dirpos);
+			if(chdir(dir.c_str()) == -1)
+				die(1, "Cannot change directories to " + dir);
+		}
+
 		Time start;
 		cout << "Parsing config file, loading data ... ";
 		cout.flush();
