@@ -106,7 +106,7 @@ class PEWR {
 	ArrayComplex    ewfft;   // current best guess of the exit wave in frequency domain
 	string          output;  // prefix for the name of the output file
 	int             outputfreq;  // output on a linear scale, ie if x=10, output 10, 20, 30, 40, 50, etc
-	double          outputpower; // output on an exponential scale, ie if x=2, output 2, 4, 8, 16, 32, etc
+	double          outputgeom;  // output on a geometric scale, ie if x=2, output 2, 4, 8, 16, 32, etc
 	int             outputlast;  // output the last few iterations
 
 	double q2(int x, int y){
@@ -126,7 +126,7 @@ public:
 		psize   = 0;
 		iters   = 0;
 		outputfreq = 0;
-		outputpower = 0;
+		outputgeom = 0;
 		outputlast = 1;
 
 		string type;
@@ -144,6 +144,8 @@ public:
 		Time start;
 		cout << "Parsing config file, loading data ... ";
 		cout.flush();
+
+		bool setfvals = false, setplanes = false;
 
 		while(ifs.good()){
 			string cmd;
@@ -184,8 +186,8 @@ public:
 				ifs >> output;
 			}else if(cmd == "outputfreq"){
 				ifs >> outputfreq;
-			}else if(cmd == "outputpower"){
-				ifs >> outputpower;
+			}else if(cmd == "outputgeom"){
+				ifs >> outputgeom;
 			}else if(cmd == "outputlast"){
 				ifs >> outputlast;
 			}else if(cmd == "planes"){
@@ -209,12 +211,14 @@ public:
 					else if(type == "double") planes[i]->import<double>(name);
 					else die(1, "Unknown type " + type);
 				}
+				setplanes = true;
 			}else if(cmd == "fvals"){
 				if(nplanes == 0)
 					die(1, "nplanes size must be set before fvals");
 
 				for(int i = 0; i < nplanes; i++)
 					ifs >> planes[i]->fval;
+				setfvals = true;
 			}else if(cmd == "frange"){
 				if(nplanes == 0)
 					die(1, "nplanes size must be set before frange");
@@ -226,6 +230,7 @@ public:
 					planes[i]->fval = start;
 					start += incr;
 				}
+				setfvals = true;
 			}else if(cmd == "guess"){
 				string name;
 				ifs >> name >> startiter;
@@ -241,6 +246,17 @@ public:
 		}
 
 		ifs.close();
+
+		if(size    == 0) die(1, "size must be defined in the config file");
+		if(padding == 0) die(1, "padding must be defined in the config file");
+		if(lambda  == 0) die(1, "lambda (ie wavelength) must be defined in the config file");
+		if(qmax    == 0) die(1, "qmax must be defined in the config file");
+		if(psize   == 0) die(1, "psize must be defined in the config file");
+		if(iters   == 0) die(1, "iters must be defined in the config file");
+		if(nplanes == 0) die(1, "nplanes must be defined in the config file");
+		if(!setfvals)    die(1, "must set either fvals or frange in the config file");
+		if(!setplanes)   die(1, "must set the planes in the config file");
+		if(output == "") die(1, "No output prefix is defined in the config file");
 
 		cout << "precomputing data ... ";
 		cout.flush();
@@ -295,10 +311,10 @@ public:
 		cout << "done in " << (int)((Time() - start)*1000) << " msec\n";
 		cout.flush();
 
-		double nextpoweroutput = 1;
-		if(outputpower > 0)
-			while(nextpoweroutput > startiter)
-				nextpoweroutput *= outputpower;
+		double nextgeomoutput = 1;
+		if(outputgeom > 0)
+			while(nextgeomoutput > startiter)
+				nextgeomoutput *= outputgeom;
 
 		// Run iterations
 		for(int iter = startiter; iter <= iters; iter++){
@@ -390,11 +406,11 @@ public:
 
 			//output exit wave
 			if(((outputfreq > 0 && iter % outputfreq == 0) ||
-			    (outputpower > 0 && nextpoweroutput <= iter) ||
+			    (outputgeom > 0 && nextgeomoutput <= iter) ||
 			    (iters - iter < outputlast)) && output.size() > 0){
 
-				if(outputpower > 0)
-					nextpoweroutput *= outputpower;
+				if(outputgeom > 0)
+					nextgeomoutput *= outputgeom;
 
 				fftw_execute(fftbwd); //ewfft -> ew
 
