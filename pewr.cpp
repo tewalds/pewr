@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdint.h>
+#include <signal.h>
 
 #include <fftw3.h>
 
@@ -30,6 +31,23 @@ template <class T> std::string to_str(T a){
 	std::stringstream out;
 	out << a;
 	return out.str();
+}
+
+bool interrupted = false;
+
+void interrupt(int sig){
+	if(interrupted){
+		cout << "Second interrupt, exiting ungracefully\n";
+		exit(1);
+	}
+	cout << "Interrupt, finishing iteration and outputting ...";
+	cout.flush();
+	interrupted = true;
+}
+
+void die(int code, const string & str){
+	cout << str << endl;
+	exit(code);
 }
 
 struct Plane {
@@ -85,11 +103,6 @@ struct Plane {
 				amplitude[x][y] = sqrt(abs(amplitude[x][y]));
 	}
 };
-
-void die(int code, const string & str){
-	printf("%s\n", str.c_str());
-	exit(code);
-}
 
 class PEWR {
 	bool            verbose; // output the timings of each part of the algorithm
@@ -317,7 +330,7 @@ public:
 				nextgeomoutput *= outputgeom;
 
 		// Run iterations
-		for(int iter = startiter; iter <= iters; iter++){
+		for(int iter = startiter; iter <= iters && !interrupted; iter++){
 
 			Time startiter;
 			cout << "Iter " << iter << " ...";
@@ -405,9 +418,10 @@ public:
 			}
 
 			//output exit wave
-			if(((outputfreq > 0 && iter % outputfreq == 0) ||
-			    (outputgeom > 0 && nextgeomoutput <= iter) ||
-			    (iters - iter < outputlast)) && output.size() > 0){
+			if((outputfreq > 0 && iter % outputfreq == 0) ||
+			   (outputgeom > 0 && nextgeomoutput <= iter) ||
+			   (iters - iter < outputlast) ||
+			   interrupted){
 
 				if(outputgeom > 0)
 					while(nextgeomoutput <= iter)
@@ -435,12 +449,17 @@ public:
 
 			cout << " done in " << (int)((Time() - startiter)*1000) << " msec\n";
 		}
+
+		cout << "Completed in " << (int)(Time() - start) << " sec\n";
 	}
 };
 
 int main(int argc, char **argv){
 	if(argc < 2)
 		die(1, "Must pass the name of a config file");
+
+	signal(SIGINT,  interrupt);
+	signal(SIGTERM, interrupt);
 
 	PEWR pewr(argv[1]);
 }
