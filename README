@@ -1,48 +1,55 @@
 PEWR - Parallelized Exit Wave Reconstruction
 by Timo Ewalds and Colin Ophus
-version:  ???
 
 
 
 
 OVERVIEW
 
--This code is designed for very fast iterative exit wave reconstruction of two-dimensional focal series taken with a high-resolution transmission electron microscope (HRTEM).
--PEWR supports padding, resuming previous iterations, regular outputs, logarithmically timed outputs and non-linear spacing of focal planes.
--The motivation behind PEWR is the exit wave reconstruction requires a very large number 
+-This code is designed for very fast iterative exit wave reconstruction of two-dimensional
+ focal series taken with a high-resolution transmission electron microscope (HRTEM).
+-PEWR supports padding, resuming previous iterations, regular outputs, geometrically
+ timed outputs and non-linear spacing of focal planes.
+-The motivation behind PEWR is the exit wave reconstruction requires a very large number of iterations
 -The generic algorithm is described in detail in:
 	L Allen, W McBride, N O’Leary and M Oxley, Exit wave reconstruction at atomic resolution, Ultramicroscopy 100 (2004) 91–104.
--The specific additions to the algorithm is described in our paper:
-	??? 
--Alternative, much more developed code is available for MacTempas (www.totalresolution.com).
+-Alternative, much more developed commercial code is available for MacTempas (www.totalresolution.com).
 
 
 
 
 INSTALLATION
 
--download source from github.com/tewalds/pewr
+-download source from http://github.com/tewalds/pewr
 -Linux:   compile by running "make"
 -OSX:     compile by running "make"
 -Windows: ???
 
 
+DEPENDENCIES
+
+- FFTW: http://www.fftw.org/
+  - libfftw3-3, libfftw3-dev on Ubuntu
 
 
 RUNNING PEWR
 
 pewr <config_file>
 
+Pewr will change directories to the config file, so input files and output files
+will be read and written relative to the config file.
 
+If Pewr is interrupted before completion, it will finish and output the current
+iteration so resuming is possible. A second interrupt will exit immediately.
 
 
 CONFIGURATION
 
--PEWR requires a configuration file as an input.
+-PEWR requires a configuration file as an input on the command line.
 -This configuration file should contain one input plus argument per line.
 -Required inputs:  (# gives description)
-	size <integer>    	# size of image in pixels.
-	padding <integer>	# size of reconstruction in pixels, must be >= size. 
+	size <integer>      # size of image in pixels.
+	padding <integer>   # size of reconstruction in pixels, must be >= size.
 						# for zero padding, use padding = size.
 	psize <number>		# pixel dimensions in Angstroms/pixel
 	lambda <number>		# electron wavelength in Angstroms
@@ -51,19 +58,18 @@ CONFIGURATION
 	nplanes <integer>	# total number of input planes
 	qmax <number>		# maximum spatial frequency in inverse Angstroms (typical values are near 1)
 	iters <integer>		# number of iterations.
-	type <string>		# image format. Valid formats are int8, uint8, int16, ...
+	type <string>		# image format. Valid formats are: int8, uint8, int16, uint16, int32, uint32, float, double
 	output <string>		# file name stem for the complex double output files.
 						# A ".#" will be appended onto the end of each output, where # is the iteration number.
-				
 
-
-						
 -Optional inputs
-	outputfreq <integer>		# How often to output the current exit wave in iterations.
-	outputlast <integer>		# Number of images to output at end of run.
-							# Example if iters == 100 and outputlast == 3, iterations 98, 99 and 100 will be written.
-
-	
+	verbose                      # Output timing information for each iteration, possibly other stuff in the future
+	outputfreq <integer>		 # How often to output the current exit wave on a linear scale, eg outputfreq = 10: 10, 20, 30, etc
+	outputgeom <integer>		 # How often to output the current exit wave on a geometric scale, eg outputgeom = 2: 2, 4, 8, 16, etc
+	outputlast <integer>		 # Number of images to output at end of run, default is 1
+								 # Example if iters == 100 and outputlast == 3, iterations 98, 99 and 100 will be written.
+	guess <filename> <iteration> # Start the simulation with the file referenced by the string in the normal output format,
+								 # starting from the integer iteration
 
 
 POSSIBLE FUTURE FEATURES
@@ -80,18 +86,14 @@ POSSIBLE FUTURE FEATURES
 
 
 
-
-
-
-
-
 KNOWN BUGS
 
-???
-
+none
 
 
 CONTACT
 
 programming:  timo@ewalds.ca
 algorithmic:  cophus@gmail.com
+
+
