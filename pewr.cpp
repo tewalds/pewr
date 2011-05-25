@@ -410,7 +410,8 @@ public:
 			    (iters - iter < outputlast)) && output.size() > 0){
 
 				if(outputgeom > 0)
-					nextgeomoutput *= outputgeom;
+					while(nextgeomoutput <= iter)
+						nextgeomoutput *= outputgeom;
 
 				fftw_execute(fftbwd); //ewfft -> ew
 
