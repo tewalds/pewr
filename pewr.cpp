@@ -249,8 +249,8 @@ public:
 				ifs >> name >> startiter;
 
 				ifstream ifguess(name.c_str(), ios::in | ios::binary);
-				for(int x = 0; x < size; x++)
-					for(int y = 0; y < size; y++)
+				for(int x = 0; x < padding; x++)
+					for(int y = 0; y < padding; y++)
 						ifguess.read( (char *) & ew[x][y], sizeof(Complex));
 				ifguess.close();
 			}else{
