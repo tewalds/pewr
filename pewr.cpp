@@ -143,7 +143,7 @@ public:
 		outputlast = 1;
 
 		string type;
-		int startiter = 1;
+		int startiter = 0;
 
 		ifstream ifs(config.c_str(), ifstream::in);
 
@@ -313,7 +313,7 @@ public:
 		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
 
 		//setup the initial approximations
-		if(startiter == 1)
+		if(startiter == 0)
 			#pragma omp parallel for schedule(guided)
 			for(int x = 0; x < padding; x++)
 				for(int y = 0; y < padding; y++)
@@ -330,7 +330,7 @@ public:
 				nextgeomoutput *= outputgeom;
 
 		// Run iterations
-		for(int iter = startiter; iter <= iters && !interrupted; iter++){
+		for(int iter = startiter+1; iter <= iters && !interrupted; iter++){
 
 			Time startiter;
 			cout << "Iter " << iter << " ...";
