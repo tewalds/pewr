@@ -326,7 +326,7 @@ public:
 
 		double nextgeomoutput = 1;
 		if(outputgeom > 0)
-			while(nextgeomoutput > startiter)
+			while(nextgeomoutput <= startiter)
 				nextgeomoutput *= outputgeom;
 
 		// Run iterations
