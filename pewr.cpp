@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <signal.h>
 
+#include <omp.h>
 #include <fftw3.h>
 
 #define NDEBUG
@@ -178,6 +179,10 @@ public:
 				ewfft.Allocate(padding, padding, sizeof(Complex));
 			}else if(cmd == "verbose"){
 				verbose = true;
+			}else if(cmd == "threads"){
+				int numthreads;
+				ifs >> numthreads;
+				omp_set_num_threads(numthreads);
 			}else if(cmd == "nplanes"){
 				if(size == 0 || padding == 0)
 					die(1, "padding and size must be set before nplanes");

@@ -64,6 +64,7 @@ CONFIGURATION
 
 -Optional inputs
 	verbose                       # Output timing information for each iteration, possibly other stuff in the future
+	threads <integer>             # How many threads to run, number of cores/cpus by default
 	outputfreq <integer>          # How often to output the current exit wave on a linear scale, eg outputfreq = 10: 10, 20, 30, etc
 	outputgeom <integer>	          # How often to output the current exit wave on a geometric scale, eg outputgeom = 2: 2, 4, 8, 16, etc
 	outputlast <integer>	          # Number of images to output at end of run, default is 1
