@@ -59,8 +59,8 @@ struct Plane {
 	ArrayComplex ew;        // exit wave plane in the real domain
 	fftw_plan    fftfwd;    // fast fourier transform in the forward direction space -> freq
 	fftw_plan    fftbwd;    // fast fourier transform in the reverse direction freq -> space
-	
-	Plane(int _size, int _padding) : 
+
+	Plane(int _size, int _padding) :
 		size(_size), padding(_padding),
 		amplitude(size, size, sizeof(double)),
 		prop(     padding, padding, sizeof(Complex)),
@@ -167,9 +167,9 @@ public:
 
 			if(cmd == "")
 				break;
-			
+
 //			cout << cmd << endl;
-			
+
 			if(cmd == "size"){
 				ifs >> size;
 			}else if(cmd == "padding"){
@@ -241,7 +241,7 @@ public:
 				if(nplanes == 0)
 					die(1, "nplanes size must be set before frange");
 
-				int start, incr;
+				double start, incr;
 				ifs >> start >> incr;
 
 				for(int i = 0; i < nplanes; i++){
@@ -289,7 +289,7 @@ public:
 		for(int i = 0; i < nplanes; i++)
 			planes[i]->amplitude *= 1.0/mean;
 
-		//compute amplitudes	
+		//compute amplitudes
 		#pragma omp parallel for schedule(guided)
 		for(int i = 0; i < nplanes; i++)
 			planes[i]->compute_amplitudes();
@@ -399,7 +399,7 @@ public:
 					timedelta[4] += time2 - time1;
 				}
 			}
-		
+
 			Time time1, time2;
 
 			// Backpropagate and find mean EW
@@ -468,5 +468,4 @@ int main(int argc, char **argv){
 
 	PEWR pewr(argv[1]);
 }
-
 
