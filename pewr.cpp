@@ -93,9 +93,9 @@ struct Plane {
 
 	Plane(int _size, int _padding) :
 		size(_size), padding(_padding),
-		amplitude(size, size, sizeof(Real)),
-		prop(     padding, padding, sizeof(Complex)),
-		ew(       padding, padding, sizeof(Complex)),
+		amplitude(size, size, 16),
+		prop(     padding, padding, 16),
+		ew(       padding, padding, 16),
 		fftfwd(padding, padding, ew(), ew(), FFTW_FORWARD, FFTW_MEASURE),
 		fftbwd(padding, padding, ew(), ew(), FFTW_BACKWARD, FFTW_MEASURE) {
 	}
@@ -205,8 +205,8 @@ public:
 			}else if(cmd == "padding"){
 				ifs >> padding;
 
-				ew.Allocate(   padding, padding, sizeof(Complex));
-				ewfft.Allocate(padding, padding, sizeof(Complex));
+				ew.Allocate(   padding, padding, 16);
+				ewfft.Allocate(padding, padding, 16);
 			}else if(cmd == "verbose"){
 				verbose = true;
 			}else if(cmd == "threads"){
@@ -326,7 +326,7 @@ public:
 
 		//precompute q2
 		double qmax2 = qmax*qmax;
-		tophat.Allocate(padding, padding, sizeof(double));
+		tophat.Allocate(padding, padding, 16);
 		#pragma omp parallel for schedule(guided)
 		for(int x = 0; x < padding; x++)
 			for(int y = 0; y < padding; y++)
