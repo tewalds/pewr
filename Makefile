@@ -1,7 +1,7 @@
 .PHONY: clean fresh run gendeps profile
 
 
-LDFLAGS   += -lfftw3 -lm
+LDFLAGS   += -lfftw3 -lfftw3f -lm
 OBJECTS		= pewr.o
 
 ifdef DEBUG
@@ -49,5 +49,4 @@ fresh: clean all
 
 profile:
 	valgrind --tool=callgrind ./pewr
-
 

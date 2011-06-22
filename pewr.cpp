@@ -17,15 +17,46 @@
 #include "Array.h"
 #include "time.h"
 
+class FFTWd {
+	fftw_plan plan;
+public:
+	FFTWd(int n0, int n1, void *in, void *out, int sign, unsigned flags){
+		plan = fftw_plan_dft_2d(n0, n1, reinterpret_cast<fftw_complex*>(in), reinterpret_cast<fftw_complex*>(out), sign, flags);
+	}
+	~FFTWd(){ fftw_destroy_plan(plan); }
+	void operator()(){ fftw_execute(plan); }
+};
+
+class FFTWf {
+	fftwf_plan plan;
+public:
+	FFTWf(int n0, int n1, void *in, void *out, int sign, unsigned flags){
+		plan = fftwf_plan_dft_2d(n0, n1, reinterpret_cast<fftwf_complex*>(in), reinterpret_cast<fftwf_complex*>(out), sign, flags);
+	}
+	~FFTWf(){ fftwf_destroy_plan(plan); }
+	void operator()(){ fftwf_execute(plan); }
+};
+
+
 // Compile with g++ -lfftw3 -lm -fopenmp pewr.cpp -o pewr
 
 using namespace std;
 using namespace Array;
 
-typedef std::complex<double> Complex;
+/*
+//computations should be done with doubles, higher accuracy
+typedef double Real;
+typedef FFTWd FFTWreal;
+/*/
+//computations should be done with floats, higher speed
+typedef float Real;
+typedef FFTWf FFTWreal;
+//*/
+
+typedef std::complex<Real> Complex;
 
 typedef array2<Complex> ArrayComplex;
-typedef array2<double>  ArrayDouble;
+typedef array2<Real>    ArrayReal;
 typedef array2<bool>    ArrayBool;
 
 template <class T> std::string to_str(T a){
@@ -53,21 +84,20 @@ void die(int code, const string & str){
 
 struct Plane {
 	int size, padding;
-	double       fval;      // focal plane
-	ArrayDouble  amplitude; // amplitudes, stores the initial image until converted to amplitudes
+	Real         fval;      // focal plane
+	ArrayReal    amplitude; // amplitudes, stores the initial image until converted to amplitudes
 	ArrayComplex prop;      // propagation value to defocus the exit wave
 	ArrayComplex ew;        // exit wave plane in the real domain
-	fftw_plan    fftfwd;    // fast fourier transform in the forward direction space -> freq
-	fftw_plan    fftbwd;    // fast fourier transform in the reverse direction freq -> space
+	FFTWreal     fftfwd;    // fast fourier transform in the forward direction space -> freq
+	FFTWreal     fftbwd;    // fast fourier transform in the reverse direction freq -> space
 
 	Plane(int _size, int _padding) :
 		size(_size), padding(_padding),
-		amplitude(size, size, sizeof(double)),
+		amplitude(size, size, sizeof(Real)),
 		prop(     padding, padding, sizeof(Complex)),
-		ew(       padding, padding, sizeof(Complex))
-		{
-		fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ew()), FFTW_FORWARD, FFTW_MEASURE);
-		fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
+		ew(       padding, padding, sizeof(Complex)),
+		fftfwd(padding, padding, ew(), ew(), FFTW_FORWARD, FFTW_MEASURE),
+		fftbwd(padding, padding, ew(), ew(), FFTW_BACKWARD, FFTW_MEASURE) {
 	}
 
 	template <class T> void import(const string & name){
@@ -314,8 +344,8 @@ public:
 		}
 
 		//setup the base fftw plans
-		fftw_plan fftfwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ew()), reinterpret_cast<fftw_complex*>(ewfft()), FFTW_FORWARD, FFTW_MEASURE);
-		fftw_plan fftbwd = fftw_plan_dft_2d(padding, padding, reinterpret_cast<fftw_complex*>(ewfft()), reinterpret_cast<fftw_complex*>(ew()), FFTW_BACKWARD, FFTW_MEASURE);
+		FFTWreal fftfwd(padding, padding, ew(), ewfft(), FFTW_FORWARD, FFTW_MEASURE);
+		FFTWreal fftbwd(padding, padding, ewfft(), ew(), FFTW_BACKWARD, FFTW_MEASURE);
 
 		//setup the initial approximations
 		if(startiter == 0)
@@ -324,7 +354,7 @@ public:
 				for(int y = 0; y < padding; y++)
 					ew[x][y] = Complex(1, 0);
 
-		fftw_execute(fftfwd);
+		fftfwd();
 
 		cout << "done in " << (int)((Time() - start)*1000) << " msec\n";
 		cout.flush();
@@ -341,8 +371,8 @@ public:
 			cout << "Iter " << iter << " ...";
 			cout.flush();
 
-			double timedelta[8];
-			for(int i = 0; i < 8; i++)
+			double timedelta[7];
+			for(int i = 0; i < 7; i++)
 				timedelta[i] = 0;
 
 			#pragma omp parallel for schedule(dynamic)
@@ -367,7 +397,7 @@ public:
 					timedelta[0] += time2 - time1;
 				}
 
-				fftw_execute(plane->fftbwd); //plane->ewfft => plane->ew
+				plane->fftbwd(); //plane->ewfft => plane->ew
 
 				if(verbose){
 					time1 = Time();
@@ -392,7 +422,7 @@ public:
 				}
 
 				// Back propagate EW to zero plane, backpropagation is merged with mean
-				fftw_execute(plane->fftfwd); //plane->ew => plane->ewfft
+				plane->fftfwd(); //plane->ew => plane->ewfft
 
 				if(verbose){
 					time2 = Time();
@@ -410,7 +440,7 @@ public:
 						Complex mean = 0;
 						for(int p = 0; p < nplanes; p++)
 							mean += planes[p]->ew[x][y] * conj(planes[p]->prop[x][y]);
-						ewfft[x][y] = mean / (double)nplanes;
+						ewfft[x][y] = mean / (Real)nplanes;
 					}else{
 						ewfft[x][y] = 0;
 					}
@@ -419,7 +449,7 @@ public:
 
 			if(verbose){
 				time2 = Time();
-				timedelta[6] += time2 - time1;
+				timedelta[5] += time2 - time1;
 			}
 
 			//output exit wave
@@ -432,7 +462,7 @@ public:
 					while(nextgeomoutput <= iter)
 						nextgeomoutput *= outputgeom;
 
-				fftw_execute(fftbwd); //ewfft -> ew
+				fftbwd(); //ewfft -> ew
 
 				ew *= 1.0/(padding*padding);
 
@@ -445,11 +475,11 @@ public:
 
 			if(verbose){
 				time1 = Time();
-				timedelta[7] += time1 - time2;
+				timedelta[6] += time1 - time2;
 			}
 
 			if(verbose)
-				for(int i = 0; i < 8; i++)
+				for(int i = 0; i < 7; i++)
 					cout << " " << (int)(timedelta[i]*1000);
 
 			cout << " done in " << (int)((Time() - startiter)*1000) << " msec\n";
