@@ -173,7 +173,7 @@ public:
 		outputgeom = 0;
 		outputlast = 1;
 
-		string type;
+		string type, guesstype;
 		int startiter = 0;
 
 		ifstream ifs(config.c_str(), ifstream::in);
@@ -279,14 +279,38 @@ public:
 					start += incr;
 				}
 				setfvals = true;
+			}else if(cmd == "guesstype"){
+				ifs >> guesstype;
+				if(startiter)
+					die(1, "guesstype must come before guess");
 			}else if(cmd == "guess"){
 				string name;
 				ifs >> name >> startiter;
 
 				ifstream ifguess(name.c_str(), ios::in | ios::binary);
-				for(int x = 0; x < padding; x++)
-					for(int y = 0; y < padding; y++)
-						ifguess.read( (char *) & ew[x][y], sizeof(Complex));
+				if(guesstype == ""){
+					for(int x = 0; x < padding; x++)
+						for(int y = 0; y < padding; y++)
+							ifguess.read( (char *) & ew[x][y], sizeof(Complex));
+				}else if(guesstype == "float"){
+					for(int x = 0; x < padding; x++){
+						for(int y = 0; y < padding; y++){
+							complex<float> temp;
+							ifguess.read( (char *) & temp, sizeof(complex<float>));
+							ew[x][y] = temp;
+						}
+					}
+				}else if(guesstype == "double"){
+					for(int x = 0; x < padding; x++){
+						for(int y = 0; y < padding; y++){
+							complex<double> temp;
+							ifguess.read( (char *) & temp, sizeof(complex<double>));
+							ew[x][y] = temp;
+						}
+					}
+				}else{
+					die(1, "unknown guesstype, choose double or float");
+				}
 				ifguess.close();
 			}else{
 				die(1, "Unknown command " + cmd);
