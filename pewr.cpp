@@ -43,7 +43,7 @@ public:
 using namespace std;
 using namespace Array;
 
-/*
+//*
 //computations should be done with doubles, higher accuracy
 typedef double Real;
 typedef FFTWd FFTWreal;
