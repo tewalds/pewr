@@ -71,7 +71,8 @@ CONFIGURATION
 	                              # Example if iters == 100 and outputlast == 3, iterations 98, 99 and 100 will be written.
 	guess <filename> <iteration>  # Start the simulation with the file referenced by the string in the normal output format,
 	                              # starting from the integer iteration
-
+	guesstype <float|double>      # read the guess file as a floats or doubles. Allows some amount of iterations with floats, then
+	                              # run a few more with the higher accuracy of a double
 
 POSSIBLE FUTURE FEATURES
 
@@ -96,5 +97,4 @@ CONTACT
 
 programming:  timo@ewalds.ca
 algorithmic:  cophus@gmail.com
-
 
