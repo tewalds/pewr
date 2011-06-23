@@ -10,6 +10,11 @@
 #include <stdint.h>
 #include <signal.h>
 
+#ifdef _WIN32
+//needed for chdir on windows
+#include <direct.h>
+#endif
+
 #include <omp.h>
 #include <fftw3.h>
 
