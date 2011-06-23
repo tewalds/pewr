@@ -22,41 +22,37 @@
 #include "Array.h"
 #include "time.h"
 
-class FFTWd {
-	fftw_plan plan;
-public:
-	FFTWd(int n0, int n1, void *in, void *out, int sign, unsigned flags){
-		plan = fftw_plan_dft_2d(n0, n1, reinterpret_cast<fftw_complex*>(in), reinterpret_cast<fftw_complex*>(out), sign, flags);
-	}
-	~FFTWd(){ fftw_destroy_plan(plan); }
-	void operator()(){ fftw_execute(plan); }
-};
-
-class FFTWf {
-	fftwf_plan plan;
-public:
-	FFTWf(int n0, int n1, void *in, void *out, int sign, unsigned flags){
-		plan = fftwf_plan_dft_2d(n0, n1, reinterpret_cast<fftwf_complex*>(in), reinterpret_cast<fftwf_complex*>(out), sign, flags);
-	}
-	~FFTWf(){ fftwf_destroy_plan(plan); }
-	void operator()(){ fftwf_execute(plan); }
-};
-
-
 // Compile with g++ -lfftw3 -lm -fopenmp pewr.cpp -o pewr
 
 using namespace std;
 using namespace Array;
 
-//*
+#ifndef USE_FLOATS
 //computations should be done with doubles, higher accuracy
 typedef double Real;
-typedef FFTWd FFTWreal;
-/*/
+
+class FFTWreal {
+	fftw_plan plan;
+public:
+	FFTWreal(int n0, int n1, void *in, void *out, int sign, unsigned flags){
+		plan = fftw_plan_dft_2d(n0, n1, reinterpret_cast<fftw_complex*>(in), reinterpret_cast<fftw_complex*>(out), sign, flags);
+	}
+	~FFTWreal(){ fftw_destroy_plan(plan); }
+	void operator()(){ fftw_execute(plan); }
+};
+#else
 //computations should be done with floats, higher speed
 typedef float Real;
-typedef FFTWf FFTWreal;
-//*/
+class FFTWreal {
+	fftwf_plan plan;
+public:
+	FFTWreal(int n0, int n1, void *in, void *out, int sign, unsigned flags){
+		plan = fftwf_plan_dft_2d(n0, n1, reinterpret_cast<fftwf_complex*>(in), reinterpret_cast<fftwf_complex*>(out), sign, flags);
+	}
+	~FFTWreal(){ fftwf_destroy_plan(plan); }
+	void operator()(){ fftwf_execute(plan); }
+};
+#endif
 
 typedef std::complex<Real> Complex;
 

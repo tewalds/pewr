@@ -1,8 +1,15 @@
 .PHONY: clean fresh run gendeps profile
 
 
-LDFLAGS   += -lfftw3 -lfftw3f -lm
+LDFLAGS		+= -lm
 OBJECTS		= pewr.o
+
+ifdef USE_FLOATS
+	CPPFLAGS	+= -DUSE_FLOATS
+	LDFLAGS		+= -lfftw3f
+else
+	LDFLAGS		+= -lfftw3
+endif
 
 ifdef DEBUG
 	CPPFLAGS	+= -g3 -Wall
