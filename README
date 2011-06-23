@@ -22,7 +22,8 @@ INSTALLATION
 
 -download source from http://github.com/tewalds/pewr
 -Linux:   compile by running "make"
--OSX:     compile by running "make"
+-OSX:     Install and compile fftw (fftw.org)
+          compile by running "make" in the PEWR directory
 -Windows: ???
 
 
@@ -67,7 +68,7 @@ CONFIGURATION
 	threads <integer>             # How many threads to run, number of cores/cpus by default
 	outputfreq <integer>          # How often to output the current exit wave on a linear scale, eg outputfreq = 10: 10, 20, 30, etc
 	outputgeom <integer>	          # How often to output the current exit wave on a geometric scale, eg outputgeom = 2: 2, 4, 8, 16, etc
-	outputlast <integer>	          # Number of images to output at end of run, default is 1
+	outputlast <integer>          # Number of images to output at end of run, default is 1
 	                              # Example if iters == 100 and outputlast == 3, iterations 98, 99 and 100 will be written.
 	guess <filename> <iteration>  # Start the simulation with the file referenced by the string in the normal output format,
 	                              # starting from the integer iteration
