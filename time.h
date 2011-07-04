@@ -43,5 +43,17 @@ public:
 	bool operator != (const Time & a) const { return t != a.t; }
 };
 
+class LapTime {
+	Time t[2];
+	bool current;
+public:
+	LapTime() : current(false) { }
+	double operator()(){
+		current = !current;
+		t[current] = Time();
+		return t[current] - t[!current];
+	}
+};
+
 #endif
 
