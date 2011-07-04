@@ -404,7 +404,7 @@ public:
 			for(int p = 0; p < nplanes; p++){
 				Plane * plane = planes[p];
 
-				Time time1, time2;
+				LapTime laptime;
 
 				// Propagate EW to each plane
 				for(int x = 0; x < padding; x++){
@@ -417,45 +417,30 @@ public:
 					}
 				}
 
-				if(verbose){
-					time2 = Time();
-					timedelta[0] += time2 - time1;
-				}
+				timedelta[0] += laptime();
 
 				plane->fftbwd(); //plane->ewfft => plane->ew
 
-				if(verbose){
-					time1 = Time();
-					timedelta[1] += time1 - time2;
-				}
+				timedelta[1] += laptime();
 
 				plane->ew *= 1.0/(padding*padding);
 
-				if(verbose){
-					time2 = Time();
-					timedelta[2] += time2 - time1;
-				}
+				timedelta[2] += laptime();
 
 				// Replace EW amplitudes
 				for(int x = 0; x < size; x++)
 					for(int y = 0; y < size; y++)
 						plane->ew[x][y] = polar(plane->amplitude[x][y], arg(plane->ew[x][y]));
 
-				if(verbose){
-					time1 = Time();
-					timedelta[3] += time1 - time2;
-				}
+				timedelta[3] += laptime();
 
 				// Back propagate EW to zero plane, backpropagation is merged with mean
 				plane->fftfwd(); //plane->ew => plane->ewfft
 
-				if(verbose){
-					time2 = Time();
-					timedelta[4] += time2 - time1;
-				}
+				timedelta[4] += laptime();
 			}
 
-			Time time1, time2;
+			LapTime laptime;
 
 			// Backpropagate and find mean EW
 			#pragma omp parallel for schedule(guided)
@@ -472,10 +457,7 @@ public:
 				}
 			}
 
-			if(verbose){
-				time2 = Time();
-				timedelta[5] += time2 - time1;
-			}
+			timedelta[5] += laptime();
 
 			//output exit wave
 			if((outputfreq > 0 && iter % outputfreq == 0) ||
@@ -498,10 +480,7 @@ public:
 				ofs.close();
 			}
 
-			if(verbose){
-				time1 = Time();
-				timedelta[6] += time1 - time2;
-			}
+			timedelta[6] += laptime();
 
 			if(verbose)
 				for(int i = 0; i < 7; i++)
