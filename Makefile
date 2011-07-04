@@ -11,19 +11,23 @@ else
 	LDFLAGS		+= -lfftw3
 endif
 
-ifdef DEBUG
-	CPPFLAGS	+= -g3 -Wall
+ifdef SINGLE_THREAD
+	CPPFLAGS	+= -DSINGLE_THREAD
 else
 	LDFLAGS     += -fopenmp
 	CPPFLAGS    += -fopenmp
+endif
+
+ifdef DEBUG
+	CPPFLAGS	+= -g3 -Wall
+else
 	CPPFLAGS    += -march=native
 	CPPFLAGS	+= -O3 -funroll-loops -ffast-math -ftree-vectorize -ftree-loop-im -Wall
-#	CPPFLAGS	+= -O3 -fopenmp -funroll-loops -ffast-math -funsafe-math-optimizations -ftree-vectorize -ftree-loop-im -mfpmath=sse -mmmx -msse -msse2 -msse3 -m3dnow
 endif
 
 #profile with callgrind, works well with DEBUG mode
 ifdef PROFILE
-	CFLAGS		+= -pg
+	CPPFLAGS	+= -pg
 endif
 
 #For profile directed optimizations. To use:
@@ -31,10 +35,10 @@ endif
 # 2. run the program, generates .gcno and .gcda
 # 3. compile with PROFILE_USE
 ifdef PROFILE_GEN
-	CFLAGS		+= -fprofile-generate
+	CPPFLAGS	+= -fprofile-generate
 endif
 ifdef PROFILE_USE
-	CFLAGS		+= -fprofile-use
+	CPPFLAGS	+= -fprofile-use
 endif
 
 

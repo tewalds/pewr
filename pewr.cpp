@@ -15,14 +15,15 @@
 #include <direct.h>
 #endif
 
+#ifndef SINGLE_THREAD
 #include <omp.h>
+#endif
+
 #include <fftw3.h>
 
 #define NDEBUG
 #include "Array.h"
 #include "time.h"
-
-// Compile with g++ -lfftw3 -lm -fopenmp pewr.cpp -o pewr
 
 using namespace std;
 using namespace Array;
@@ -34,7 +35,7 @@ typedef double Real;
 class FFTWreal {
 	fftw_plan plan;
 public:
-	FFTWreal(int n0, int n1, void *in, void *out, int sign, unsigned flags){
+	FFTWreal(int n0, int n1, void *in, void *out, int sign, unsigned int flags){
 		plan = fftw_plan_dft_2d(n0, n1, reinterpret_cast<fftw_complex*>(in), reinterpret_cast<fftw_complex*>(out), sign, flags);
 	}
 	~FFTWreal(){ fftw_destroy_plan(plan); }
@@ -46,7 +47,7 @@ typedef float Real;
 class FFTWreal {
 	fftwf_plan plan;
 public:
-	FFTWreal(int n0, int n1, void *in, void *out, int sign, unsigned flags){
+	FFTWreal(int n0, int n1, void *in, void *out, int sign, unsigned int flags){
 		plan = fftwf_plan_dft_2d(n0, n1, reinterpret_cast<fftwf_complex*>(in), reinterpret_cast<fftwf_complex*>(out), sign, flags);
 	}
 	~FFTWreal(){ fftwf_destroy_plan(plan); }
@@ -213,7 +214,9 @@ public:
 			}else if(cmd == "threads"){
 				int numthreads;
 				ifs >> numthreads;
+#ifndef SINGLE_THREAD
 				omp_set_num_threads(numthreads);
+#endif
 			}else if(cmd == "nplanes"){
 				if(size == 0 || padding == 0)
 					die(1, "padding and size must be set before nplanes");
