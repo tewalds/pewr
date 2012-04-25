@@ -21,7 +21,7 @@ endif
 ifdef DEBUG
 	CPPFLAGS	+= -g3 -Wall
 else
-	CPPFLAGS    += -march=native
+	#CPPFLAGS    += -march=native
 	CPPFLAGS	+= -O3 -funroll-loops -ffast-math -ftree-vectorize -ftree-loop-im -Wall
 endif
 
