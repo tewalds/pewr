@@ -337,7 +337,7 @@ public:
 		cout << "precomputing data ... ";
 		cout.flush();
 
-		//normalize
+		//normalize 
 		double mean = 0;
 		#pragma omp parallel for schedule(guided) reduction(+:mean)
 		for(int i = 0; i < nplanes; i++)
@@ -505,4 +505,11 @@ int main(int argc, char **argv){
 
 	PEWR pewr(argv[1]);
 }
+
+#define NDEBUG
+#include "Array.h"
+#include "time.h"
+
+using namespace std;
+using namespace Array;
 

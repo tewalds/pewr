@@ -10,7 +10,7 @@ OVERVIEW
  focal series taken with a high-resolution transmission electron microscope (HRTEM).
 -PEWR supports padding, resuming previous iterations, regular outputs, geometrically
  timed outputs and non-linear spacing of focal planes.
--The motivation behind PEWR is the exit wave reconstruction requires a very large number of iterations
+-The motivation behind PEWR is the exit wave reconstruction requires a very large number of iterations.  We therefore aimed to make a reconstruction code that is as fast as possible.  
 -The generic algorithm is described in detail in:
 	L Allen, W McBride, N O’Leary and M Oxley, Exit wave reconstruction at atomic resolution, Ultramicroscopy 100 (2004) 91–104.
 -Alternative, much more developed commercial code is available for MacTempas (www.totalresolution.com).
@@ -61,7 +61,7 @@ CONFIGURATION
 	iters <integer>     # number of iterations.
 	type <string>       # image format. Valid formats are: int8, uint8, int16, uint16, int32, uint32, float, double
 	output <string>     # file name stem for the complex double output files.
-                        # A ".#" will be appended onto the end of each output, where # is the iteration number.
+	                    # A ".#" will be appended onto the end of each output, where # is the iteration number.
 
 -Optional inputs
 	verbose                       # Output timing information for each iteration, possibly other stuff in the future
