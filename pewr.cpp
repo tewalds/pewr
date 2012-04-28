@@ -162,7 +162,7 @@ class PEWR {
 	}
 
 public:
-	PEWR(const string & config){
+	PEWR(const string & stackHDFfile, const string & config){
 		verbose = false;
 		size    = 0;
 		padding = 0;
@@ -496,15 +496,26 @@ public:
 	}
 };
 
+
 int main(int argc, char **argv){
+	//PEWR pewr(argv[1]);
+
+	// Check that stack of micrographs was passed in
 	if(argc < 2)
-		die(1, "Must pass the name of a config file");
+		die(1, "Must pass an HDF image stack as first argument.");
+	// Loop through input arguments to make sure a config file was specified with -c	
+	string configFile = "";
+	for(int i = 2; i < argc - 1; i++){
+		if(strcmp(argv[i],"-c") == 0)
+			configFile = argv[i+1];
+	}
 
 	signal(SIGINT,  interrupt);
 	signal(SIGTERM, interrupt);
 
-	PEWR pewr(argv[1]);
+	PEWR pewr(argv[1],configFile);
 }
+
 
 #define NDEBUG
 #include "Array.h"
